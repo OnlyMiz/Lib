@@ -1,0 +1,97 @@
+local ScreenGui = Instance.new("ScreenGui")
+local ToggleButton = Instance.new("TextButton")
+local MainFrame = Instance.new("Frame")
+local UICorner = Instance.new("UICorner")
+local TabsFolder = Instance.new("Folder")
+
+-- Toggle Button
+ToggleButton.Name = "ToggleButton"
+ToggleButton.Parent = ScreenGui
+ToggleButton.Size = UDim2.new(0, 60, 0, 30)
+ToggleButton.Position = UDim2.new(0, 10, 0, 10)
+ToggleButton.Text = "UI"
+ToggleButton.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+ToggleButton.TextColor3 = Color3.new(1, 1, 1)
+ToggleButton.ZIndex = 3
+ToggleButton.Visible = true
+
+-- Main Frame
+MainFrame.Name = "MainFrame"
+MainFrame.Parent = ScreenGui
+MainFrame.Size = UDim2.new(0, 450, 0, 300)
+MainFrame.Position = UDim2.new(0.5, -225, 0.5, -150)
+MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+MainFrame.Visible = true
+
+UICorner.Parent = MainFrame
+
+-- Tabs folder
+TabsFolder.Name = "Tabs"
+TabsFolder.Parent = MainFrame
+
+-- Toggle UI
+local uiVisible = true
+ToggleButton.MouseButton1Click:Connect(function()
+	uiVisible = not uiVisible
+	MainFrame.Visible = uiVisible
+end)
+
+game:GetService("UserInputService").InputBegan:Connect(function(input)
+	if input.KeyCode == Enum.KeyCode.RightShift then
+		uiVisible = not uiVisible
+		MainFrame.Visible = uiVisible
+	end
+end)
+
+-- Functions
+local UILib = {}
+
+function UILib:CreateTab(tabName)
+	local tab = Instance.new("Frame")
+	tab.Name = tabName
+	tab.Parent = TabsFolder
+	tab.Size = UDim2.new(1, 0, 1, 0)
+	tab.BackgroundTransparency = 1
+
+	local tabFuncs = {}
+
+	function tabFuncs:AddToggle(text, default, callback)
+		local toggle = Instance.new("TextButton")
+		toggle.Size = UDim2.new(0, 200, 0, 40)
+		toggle.Position = UDim2.new(0, 10, 0, 10 + (#tab:GetChildren() - 1) * 45)
+		toggle.Text = text
+		toggle.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+		toggle.TextColor3 = Color3.new(1,1,1)
+		toggle.Parent = tab
+
+		local state = default or false
+		toggle.Text = text .. ": " .. tostring(state)
+
+		toggle.MouseButton1Click:Connect(function()
+			state = not state
+			toggle.Text = text .. ": " .. tostring(state)
+			if callback then callback(state) end
+		end)
+	end
+
+	function tabFuncs:AddButton(text, callback)
+		local btn = Instance.new("TextButton")
+		btn.Size = UDim2.new(0, 200, 0, 40)
+		btn.Position = UDim2.new(0, 10, 0, 10 + (#tab:GetChildren() - 1) * 45)
+		btn.Text = text
+		btn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+		btn.TextColor3 = Color3.new(1,1,1)
+		btn.Parent = tab
+
+		btn.MouseButton1Click:Connect(function()
+			if callback then callback() end
+		end)
+	end
+
+	return tabFuncs
+end
+
+ScreenGui.Name = "ModernUILib"
+ScreenGui.Parent = game:GetService("CoreGui")
+
+return UILib
