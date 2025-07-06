@@ -1,97 +1,216 @@
-local ScreenGui = Instance.new("ScreenGui")
-local ToggleButton = Instance.new("TextButton")
-local MainFrame = Instance.new("Frame")
-local UICorner = Instance.new("UICorner")
-local TabsFolder = Instance.new("Folder")
+-- Modern UI Library (Rayfield-style, Mobile + PC toggle) -- Made for universal use
 
--- Toggle Button
-ToggleButton.Name = "ToggleButton"
-ToggleButton.Parent = ScreenGui
-ToggleButton.Size = UDim2.new(0, 60, 0, 30)
-ToggleButton.Position = UDim2.new(0, 10, 0, 10)
-ToggleButton.Text = "UI"
-ToggleButton.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-ToggleButton.TextColor3 = Color3.new(1, 1, 1)
-ToggleButton.ZIndex = 3
-ToggleButton.Visible = true
+local UserInputService = game:GetService("UserInputService") local TweenService = game:GetService("TweenService") local CoreGui = game:GetService("CoreGui")
 
--- Main Frame
-MainFrame.Name = "MainFrame"
-MainFrame.Parent = ScreenGui
-MainFrame.Size = UDim2.new(0, 450, 0, 300)
-MainFrame.Position = UDim2.new(0.5, -225, 0.5, -150)
-MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-MainFrame.Visible = true
+local ModernUI = {} ModernUI.__index = ModernUI
 
-UICorner.Parent = MainFrame
+-- Create base window function ModernUI:CreateWindow(title) local ScreenGui = Instance.new("ScreenGui", CoreGui) ScreenGui.Name = "ModernUILib" ScreenGui.ResetOnSpawn = false
 
--- Tabs folder
-TabsFolder.Name = "Tabs"
-TabsFolder.Parent = MainFrame
+local Main = Instance.new("Frame", ScreenGui)
+Main.Size = UDim2.new(0, 500, 0, 320)
+Main.Position = UDim2.new(0.5, -250, 0.5, -160)
+Main.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+Main.BorderSizePixel = 0
+Main.Name = "MainUI"
+Main.Visible = true
 
--- Toggle UI
-local uiVisible = true
-ToggleButton.MouseButton1Click:Connect(function()
-	uiVisible = not uiVisible
-	MainFrame.Visible = uiVisible
-end)
+local Title = Instance.new("TextLabel", Main)
+Title.Size = UDim2.new(1, 0, 0, 40)
+Title.BackgroundTransparency = 1
+Title.Text = title or "ModernUI"
+Title.Font = Enum.Font.SourceSansBold
+Title.TextSize = 24
+Title.TextColor3 = Color3.fromRGB(255,255,255)
 
-game:GetService("UserInputService").InputBegan:Connect(function(input)
-	if input.KeyCode == Enum.KeyCode.RightShift then
-		uiVisible = not uiVisible
-		MainFrame.Visible = uiVisible
-	end
-end)
+local TabHolder = Instance.new("Frame", Main)
+TabHolder.Size = UDim2.new(0, 120, 1, -40)
+TabHolder.Position = UDim2.new(0, 0, 0, 40)
+TabHolder.BackgroundColor3 = Color3.fromRGB(15,15,15)
+TabHolder.BorderSizePixel = 0
 
--- Functions
-local UILib = {}
+local PageHolder = Instance.new("Frame", Main)
+PageHolder.Size = UDim2.new(1, -120, 1, -40)
+PageHolder.Position = UDim2.new(0, 120, 0, 40)
+PageHolder.BackgroundTransparency = 1
 
-function UILib:CreateTab(tabName)
-	local tab = Instance.new("Frame")
-	tab.Name = tabName
-	tab.Parent = TabsFolder
-	tab.Size = UDim2.new(1, 0, 1, 0)
-	tab.BackgroundTransparency = 1
+local Tabs = {}
 
-	local tabFuncs = {}
+function Tabs:CreateTab(tabName)
+    local Button = Instance.new("TextButton", TabHolder)
+    Button.Size = UDim2.new(1, 0, 0, 30)
+    Button.BackgroundColor3 = Color3.fromRGB(35,35,35)
+    Button.TextColor3 = Color3.new(1,1,1)
+    Button.Text = tabName
+    Button.Font = Enum.Font.SourceSans
+    Button.TextSize = 18
 
-	function tabFuncs:AddToggle(text, default, callback)
-		local toggle = Instance.new("TextButton")
-		toggle.Size = UDim2.new(0, 200, 0, 40)
-		toggle.Position = UDim2.new(0, 10, 0, 10 + (#tab:GetChildren() - 1) * 45)
-		toggle.Text = text
-		toggle.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-		toggle.TextColor3 = Color3.new(1,1,1)
-		toggle.Parent = tab
+    local Page = Instance.new("ScrollingFrame", PageHolder)
+    Page.Size = UDim2.new(1, 0, 1, 0)
+    Page.ScrollBarThickness = 4
+    Page.CanvasSize = UDim2.new(0, 0, 0, 0)
+    Page.BackgroundTransparency = 1
+    Page.Visible = false
+    Page.Name = tabName.."Page"
+    Page.AutomaticCanvasSize = Enum.AutomaticSize.Y
 
-		local state = default or false
-		toggle.Text = text .. ": " .. tostring(state)
+    local UIList = Instance.new("UIListLayout", Page)
+    UIList.Padding = UDim.new(0, 6)
+    UIList.SortOrder = Enum.SortOrder.LayoutOrder
 
-		toggle.MouseButton1Click:Connect(function()
-			state = not state
-			toggle.Text = text .. ": " .. tostring(state)
-			if callback then callback(state) end
-		end)
-	end
+    Button.MouseButton1Click:Connect(function()
+        for _, p in pairs(PageHolder:GetChildren()) do
+            if p:IsA("ScrollingFrame") then p.Visible = false end
+        end
+        Page.Visible = true
+    end)
 
-	function tabFuncs:AddButton(text, callback)
-		local btn = Instance.new("TextButton")
-		btn.Size = UDim2.new(0, 200, 0, 40)
-		btn.Position = UDim2.new(0, 10, 0, 10 + (#tab:GetChildren() - 1) * 45)
-		btn.Text = text
-		btn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-		btn.TextColor3 = Color3.new(1,1,1)
-		btn.Parent = tab
+    local Elements = {}
 
-		btn.MouseButton1Click:Connect(function()
-			if callback then callback() end
-		end)
-	end
+    function Elements:CreateSection(name)
+        local Label = Instance.new("TextLabel", Page)
+        Label.Size = UDim2.new(1, -10, 0, 20)
+        Label.Text = name
+        Label.Font = Enum.Font.SourceSansBold
+        Label.TextSize = 20
+        Label.TextColor3 = Color3.new(1,1,1)
+        Label.BackgroundTransparency = 1
+        return Label
+    end
 
-	return tabFuncs
+    function Elements:CreateButton(text, callback)
+        local Btn = Instance.new("TextButton", Page)
+        Btn.Size = UDim2.new(1, -10, 0, 30)
+        Btn.Text = text
+        Btn.Font = Enum.Font.SourceSans
+        Btn.TextSize = 18
+        Btn.TextColor3 = Color3.new(1,1,1)
+        Btn.BackgroundColor3 = Color3.fromRGB(40,40,40)
+        Btn.MouseButton1Click:Connect(callback)
+        return Btn
+    end
+
+    function Elements:CreateToggle(text, default, callback)
+        local state = default or false
+        local Toggle = Instance.new("TextButton", Page)
+        Toggle.Size = UDim2.new(1, -10, 0, 30)
+        Toggle.Text = text..": "..tostring(state)
+        Toggle.Font = Enum.Font.SourceSans
+        Toggle.TextSize = 18
+        Toggle.TextColor3 = Color3.new(1,1,1)
+        Toggle.BackgroundColor3 = Color3.fromRGB(45,45,45)
+        Toggle.MouseButton1Click:Connect(function()
+            state = not state
+            Toggle.Text = text..": "..tostring(state)
+            callback(state)
+        end)
+        return Toggle
+    end
+
+    function Elements:CreateSlider(text, min, max, default, callback)
+        local holder = Instance.new("Frame", Page)
+        holder.Size = UDim2.new(1, -10, 0, 40)
+        holder.BackgroundTransparency = 1
+
+        local label = Instance.new("TextLabel", holder)
+        label.Size = UDim2.new(1, 0, 0, 20)
+        label.Text = text .. " - " .. tostring(default)
+        label.Font = Enum.Font.SourceSans
+        label.TextSize = 16
+        label.TextColor3 = Color3.new(1,1,1)
+        label.BackgroundTransparency = 1
+
+        local slider = Instance.new("TextButton", holder)
+        slider.Size = UDim2.new(1, 0, 0, 15)
+        slider.Position = UDim2.new(0, 0, 0, 25)
+        slider.BackgroundColor3 = Color3.fromRGB(60,60,60)
+        slider.Text = ""
+
+        local fill = Instance.new("Frame", slider)
+        fill.Size = UDim2.new((default - min)/(max - min), 0, 1, 0)
+        fill.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
+        fill.BorderSizePixel = 0
+
+        slider.MouseButton1Down:Connect(function()
+            local conn
+            conn = UserInputService.InputChanged:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.MouseMovement then
+                    local rel = math.clamp((input.Position.X - slider.AbsolutePosition.X)/slider.AbsoluteSize.X, 0, 1)
+                    fill.Size = UDim2.new(rel, 0, 1, 0)
+                    local val = math.floor(min + (max - min) * rel)
+                    label.Text = text .. " - " .. tostring(val)
+                    callback(val)
+                end
+            end)
+            UserInputService.InputEnded:Wait()
+            conn:Disconnect()
+        end)
+    end
+
+    function Elements:CreateDropdown(text, list, callback)
+        local Drop = Instance.new("TextButton", Page)
+        Drop.Size = UDim2.new(1, -10, 0, 30)
+        Drop.Text = text .. " ▼"
+        Drop.Font = Enum.Font.SourceSans
+        Drop.TextSize = 18
+        Drop.TextColor3 = Color3.new(1,1,1)
+        Drop.BackgroundColor3 = Color3.fromRGB(35,35,35)
+
+        local isOpen = false
+        local options = {}
+
+        Drop.MouseButton1Click:Connect(function()
+            isOpen = not isOpen
+            Drop.Text = text .. (isOpen and " ▲" or " ▼")
+            for _, opt in pairs(options) do
+                opt.Visible = isOpen
+            end
+        end)
+
+        for _, v in ipairs(list) do
+            local Opt = Instance.new("TextButton", Page)
+            Opt.Size = UDim2.new(1, -20, 0, 25)
+            Opt.Text = " - "..v
+            Opt.Font = Enum.Font.SourceSans
+            Opt.TextSize = 16
+            Opt.TextColor3 = Color3.new(1,1,1)
+            Opt.BackgroundColor3 = Color3.fromRGB(50,50,50)
+            Opt.Visible = false
+            Opt.MouseButton1Click:Connect(function()
+                callback(v)
+                isOpen = false
+                Drop.Text = text .. " ▼"
+                for _, o in pairs(options) do
+                    o.Visible = false
+                end
+            end)
+            table.insert(options, Opt)
+        end
+    end
+
+    return Elements
 end
 
-ScreenGui.Name = "ModernUILib"
-ScreenGui.Parent = game:GetService("CoreGui")
+-- UI Toggle hotkey / button
+local ToggleKey = Enum.KeyCode.RightShift
+local buttonToggle = Instance.new("TextButton", ScreenGui)
+buttonToggle.Size = UDim2.new(0, 60, 0, 25)
+buttonToggle.Position = UDim2.new(0, 10, 0, 10)
+buttonToggle.Text = "UI"
+buttonToggle.BackgroundColor3 = Color3.fromRGB(40,40,40)
+buttonToggle.TextColor3 = Color3.new(1,1,1)
 
-return UILib
+buttonToggle.MouseButton1Click:Connect(function()
+    Main.Visible = not Main.Visible
+end)
+
+UserInputService.InputBegan:Connect(function(input)
+    if input.KeyCode == ToggleKey then
+        Main.Visible = not Main.Visible
+    end
+end)
+
+return Tabs
+
+end
+
+return setmetatable({}, ModernUI)
