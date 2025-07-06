@@ -1,216 +1,206 @@
--- Modern UI Library (Rayfield-style, Mobile + PC toggle) -- Made for universal use
+--// 📦 ModernUI Library - Supports Mobile & PC --// ✅ Features: Tabs, Toggles, Buttons, TextBoxes, Sliders, Dropdowns, Draggable UI with Animation --// 📌 Usage: -- local UI = loadstring(game:HttpGet("https://yourhost.com/ModernUILib.lua"))() -- local window = UI:CreateWindow("My UI") -- window:CreateTab("Main"):AddButton("Hello", function() print("Clicked") end)
 
-local UserInputService = game:GetService("UserInputService") local TweenService = game:GetService("TweenService") local CoreGui = game:GetService("CoreGui")
+local ModernUI = {} local TweenService = game:GetService("TweenService") local UserInputService = game:GetService("UserInputService") local Players = game:GetService("Players") local Player = Players.LocalPlayer local Mouse = Player:GetMouse()
 
-local ModernUI = {} ModernUI.__index = ModernUI
+-- Helper Functions local function create(instance, props) local obj = Instance.new(instance) for i, v in pairs(props) do obj[i] = v end return obj end
 
--- Create base window function ModernUI:CreateWindow(title) local ScreenGui = Instance.new("ScreenGui", CoreGui) ScreenGui.Name = "ModernUILib" ScreenGui.ResetOnSpawn = false
+-- Drag Logic local function makeDraggable(frame) local dragToggle, dragInput, dragStart, startPos frame.InputBegan:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then dragToggle = true dragStart = input.Position startPos = frame.Position input.Changed:Connect(function() if input.UserInputState == Enum.UserInputState.End then dragToggle = false end end) end end)
 
-local Main = Instance.new("Frame", ScreenGui)
-Main.Size = UDim2.new(0, 500, 0, 320)
-Main.Position = UDim2.new(0.5, -250, 0.5, -160)
-Main.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-Main.BorderSizePixel = 0
-Main.Name = "MainUI"
-Main.Visible = true
+frame.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+        dragInput = input
+    end
+end)
 
-local Title = Instance.new("TextLabel", Main)
-Title.Size = UDim2.new(1, 0, 0, 40)
-Title.BackgroundTransparency = 1
-Title.Text = title or "ModernUI"
-Title.Font = Enum.Font.SourceSansBold
-Title.TextSize = 24
-Title.TextColor3 = Color3.fromRGB(255,255,255)
+game:GetService("RunService").Heartbeat:Connect(function()
+    if dragToggle and dragInput then
+        local delta = dragInput.Position - dragStart
+        frame.Position = startPos + UDim2.new(0, delta.X, 0, delta.Y)
+    end
+end)
 
-local TabHolder = Instance.new("Frame", Main)
-TabHolder.Size = UDim2.new(0, 120, 1, -40)
-TabHolder.Position = UDim2.new(0, 0, 0, 40)
-TabHolder.BackgroundColor3 = Color3.fromRGB(15,15,15)
-TabHolder.BorderSizePixel = 0
+end
 
-local PageHolder = Instance.new("Frame", Main)
-PageHolder.Size = UDim2.new(1, -120, 1, -40)
-PageHolder.Position = UDim2.new(0, 120, 0, 40)
-PageHolder.BackgroundTransparency = 1
+-- Main UI Creation function ModernUI:CreateWindow(title) local screenGui = create("ScreenGui", { Parent = Player:WaitForChild("PlayerGui"), Name = "ModernUI", ResetOnSpawn = false })
 
-local Tabs = {}
+local main = create("Frame", {
+    Size = UDim2.new(0, 450, 0, 300),
+    Position = UDim2.new(0.5, -225, 0.5, -150),
+    BackgroundColor3 = Color3.fromRGB(30, 30, 30),
+    AnchorPoint = Vector2.new(0.5, 0.5),
+    Parent = screenGui
+})
+create("UICorner", {CornerRadius = UDim.new(0, 10), Parent = main})
 
-function Tabs:CreateTab(tabName)
-    local Button = Instance.new("TextButton", TabHolder)
-    Button.Size = UDim2.new(1, 0, 0, 30)
-    Button.BackgroundColor3 = Color3.fromRGB(35,35,35)
-    Button.TextColor3 = Color3.new(1,1,1)
-    Button.Text = tabName
-    Button.Font = Enum.Font.SourceSans
-    Button.TextSize = 18
+makeDraggable(main)
 
-    local Page = Instance.new("ScrollingFrame", PageHolder)
-    Page.Size = UDim2.new(1, 0, 1, 0)
-    Page.ScrollBarThickness = 4
-    Page.CanvasSize = UDim2.new(0, 0, 0, 0)
-    Page.BackgroundTransparency = 1
-    Page.Visible = false
-    Page.Name = tabName.."Page"
-    Page.AutomaticCanvasSize = Enum.AutomaticSize.Y
+local tabButtons = create("Frame", {
+    Parent = main,
+    Size = UDim2.new(1, 0, 0, 30),
+    BackgroundTransparency = 1
+})
 
-    local UIList = Instance.new("UIListLayout", Page)
-    UIList.Padding = UDim.new(0, 6)
-    UIList.SortOrder = Enum.SortOrder.LayoutOrder
+local tabs = {}
+local currentTab
 
-    Button.MouseButton1Click:Connect(function()
-        for _, p in pairs(PageHolder:GetChildren()) do
-            if p:IsA("ScrollingFrame") then p.Visible = false end
-        end
-        Page.Visible = true
+function ModernUI:CreateTab(name)
+    local button = create("TextButton", {
+        Text = name,
+        Size = UDim2.new(0, 100, 1, 0),
+        BackgroundColor3 = Color3.fromRGB(45, 45, 45),
+        TextColor3 = Color3.new(1, 1, 1),
+        Parent = tabButtons
+    })
+    create("UICorner", {Parent = button})
+
+    local content = create("ScrollingFrame", {
+        Parent = main,
+        Position = UDim2.new(0, 0, 0, 35),
+        Size = UDim2.new(1, 0, 1, -35),
+        BackgroundTransparency = 1,
+        ScrollBarThickness = 5,
+        Visible = false,
+        CanvasSize = UDim2.new(0, 0, 5, 0)
+    })
+
+    local layout = create("UIListLayout", {
+        Parent = content,
+        Padding = UDim.new(0, 6)
+    })
+
+    button.MouseButton1Click:Connect(function()
+        if currentTab then currentTab.Visible = false end
+        content.Visible = true
+        currentTab = content
     end)
 
-    local Elements = {}
+    local tab = {}
 
-    function Elements:CreateSection(name)
-        local Label = Instance.new("TextLabel", Page)
-        Label.Size = UDim2.new(1, -10, 0, 20)
-        Label.Text = name
-        Label.Font = Enum.Font.SourceSansBold
-        Label.TextSize = 20
-        Label.TextColor3 = Color3.new(1,1,1)
-        Label.BackgroundTransparency = 1
-        return Label
+    function tab:AddButton(text, callback)
+        local btn = create("TextButton", {
+            Text = text,
+            Size = UDim2.new(0, 200, 0, 30),
+            BackgroundColor3 = Color3.fromRGB(60, 60, 60),
+            TextColor3 = Color3.new(1, 1, 1),
+            Parent = content
+        })
+        create("UICorner", {Parent = btn})
+        btn.MouseButton1Click:Connect(callback)
     end
 
-    function Elements:CreateButton(text, callback)
-        local Btn = Instance.new("TextButton", Page)
-        Btn.Size = UDim2.new(1, -10, 0, 30)
-        Btn.Text = text
-        Btn.Font = Enum.Font.SourceSans
-        Btn.TextSize = 18
-        Btn.TextColor3 = Color3.new(1,1,1)
-        Btn.BackgroundColor3 = Color3.fromRGB(40,40,40)
-        Btn.MouseButton1Click:Connect(callback)
-        return Btn
-    end
-
-    function Elements:CreateToggle(text, default, callback)
-        local state = default or false
-        local Toggle = Instance.new("TextButton", Page)
-        Toggle.Size = UDim2.new(1, -10, 0, 30)
-        Toggle.Text = text..": "..tostring(state)
-        Toggle.Font = Enum.Font.SourceSans
-        Toggle.TextSize = 18
-        Toggle.TextColor3 = Color3.new(1,1,1)
-        Toggle.BackgroundColor3 = Color3.fromRGB(45,45,45)
-        Toggle.MouseButton1Click:Connect(function()
+    function tab:AddToggle(text, callback)
+        local state = false
+        local toggle = create("TextButton", {
+            Text = text .. ": OFF",
+            Size = UDim2.new(0, 200, 0, 30),
+            BackgroundColor3 = Color3.fromRGB(60, 60, 60),
+            TextColor3 = Color3.new(1, 1, 1),
+            Parent = content
+        })
+        create("UICorner", {Parent = toggle})
+        toggle.MouseButton1Click:Connect(function()
             state = not state
-            Toggle.Text = text..": "..tostring(state)
+            toggle.Text = text .. ": " .. (state and "ON" or "OFF")
             callback(state)
         end)
-        return Toggle
     end
 
-    function Elements:CreateSlider(text, min, max, default, callback)
-        local holder = Instance.new("Frame", Page)
-        holder.Size = UDim2.new(1, -10, 0, 40)
-        holder.BackgroundTransparency = 1
-
-        local label = Instance.new("TextLabel", holder)
-        label.Size = UDim2.new(1, 0, 0, 20)
-        label.Text = text .. " - " .. tostring(default)
-        label.Font = Enum.Font.SourceSans
-        label.TextSize = 16
-        label.TextColor3 = Color3.new(1,1,1)
-        label.BackgroundTransparency = 1
-
-        local slider = Instance.new("TextButton", holder)
-        slider.Size = UDim2.new(1, 0, 0, 15)
-        slider.Position = UDim2.new(0, 0, 0, 25)
-        slider.BackgroundColor3 = Color3.fromRGB(60,60,60)
-        slider.Text = ""
-
-        local fill = Instance.new("Frame", slider)
-        fill.Size = UDim2.new((default - min)/(max - min), 0, 1, 0)
-        fill.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
-        fill.BorderSizePixel = 0
-
-        slider.MouseButton1Down:Connect(function()
-            local conn
-            conn = UserInputService.InputChanged:Connect(function(input)
-                if input.UserInputType == Enum.UserInputType.MouseMovement then
-                    local rel = math.clamp((input.Position.X - slider.AbsolutePosition.X)/slider.AbsoluteSize.X, 0, 1)
-                    fill.Size = UDim2.new(rel, 0, 1, 0)
-                    local val = math.floor(min + (max - min) * rel)
-                    label.Text = text .. " - " .. tostring(val)
-                    callback(val)
-                end
-            end)
-            UserInputService.InputEnded:Wait()
-            conn:Disconnect()
+    function tab:AddTextbox(placeholder, callback)
+        local tb = create("TextBox", {
+            PlaceholderText = placeholder,
+            Text = "",
+            Size = UDim2.new(0, 200, 0, 30),
+            BackgroundColor3 = Color3.fromRGB(60, 60, 60),
+            TextColor3 = Color3.new(1, 1, 1),
+            Parent = content
+        })
+        create("UICorner", {Parent = tb})
+        tb.FocusLost:Connect(function()
+            callback(tb.Text)
         end)
     end
 
-    function Elements:CreateDropdown(text, list, callback)
-        local Drop = Instance.new("TextButton", Page)
-        Drop.Size = UDim2.new(1, -10, 0, 30)
-        Drop.Text = text .. " ▼"
-        Drop.Font = Enum.Font.SourceSans
-        Drop.TextSize = 18
-        Drop.TextColor3 = Color3.new(1,1,1)
-        Drop.BackgroundColor3 = Color3.fromRGB(35,35,35)
+    function tab:AddSlider(min, max, callback)
+        local slider = create("Frame", {
+            Size = UDim2.new(0, 200, 0, 20),
+            BackgroundColor3 = Color3.fromRGB(80, 80, 80),
+            Parent = content
+        })
+        create("UICorner", {Parent = slider})
 
-        local isOpen = false
-        local options = {}
+        local handle = create("Frame", {
+            Size = UDim2.new(0, 10, 1, 0),
+            BackgroundColor3 = Color3.fromRGB(200, 200, 200),
+            Parent = slider
+        })
+        create("UICorner", {Parent = handle})
 
-        Drop.MouseButton1Click:Connect(function()
-            isOpen = not isOpen
-            Drop.Text = text .. (isOpen and " ▲" or " ▼")
-            for _, opt in pairs(options) do
-                opt.Visible = isOpen
+        local dragging = false
+
+        handle.InputBegan:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                dragging = true
             end
         end)
+        UserInputService.InputEnded:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                dragging = false
+            end
+        end)
+        game:GetService("RunService").RenderStepped:Connect(function()
+            if dragging then
+                local percent = math.clamp((Mouse.X - slider.AbsolutePosition.X) / slider.AbsoluteSize.X, 0, 1)
+                handle.Position = UDim2.new(percent, -5, 0, 0)
+                callback(math.floor(min + (max - min) * percent))
+            end
+        end)
+    end
 
-        for _, v in ipairs(list) do
-            local Opt = Instance.new("TextButton", Page)
-            Opt.Size = UDim2.new(1, -20, 0, 25)
-            Opt.Text = " - "..v
-            Opt.Font = Enum.Font.SourceSans
-            Opt.TextSize = 16
-            Opt.TextColor3 = Color3.new(1,1,1)
-            Opt.BackgroundColor3 = Color3.fromRGB(50,50,50)
-            Opt.Visible = false
-            Opt.MouseButton1Click:Connect(function()
-                callback(v)
-                isOpen = false
-                Drop.Text = text .. " ▼"
-                for _, o in pairs(options) do
-                    o.Visible = false
-                end
+    function tab:AddDropdown(options, callback)
+        local ddBtn = create("TextButton", {
+            Text = "Select Option",
+            Size = UDim2.new(0, 200, 0, 30),
+            BackgroundColor3 = Color3.fromRGB(60, 60, 60),
+            TextColor3 = Color3.new(1, 1, 1),
+            Parent = content
+        })
+        create("UICorner", {Parent = ddBtn})
+
+        local ddFrame = create("Frame", {
+            Size = UDim2.new(0, 200, 0, #options * 30),
+            Position = UDim2.new(0, 0, 0, 30),
+            BackgroundColor3 = Color3.fromRGB(45, 45, 45),
+            Visible = false,
+            Parent = ddBtn
+        })
+        create("UICorner", {Parent = ddFrame})
+
+        for _, opt in ipairs(options) do
+            local optBtn = create("TextButton", {
+                Text = opt,
+                Size = UDim2.new(1, 0, 0, 30),
+                BackgroundTransparency = 1,
+                TextColor3 = Color3.new(1, 1, 1),
+                Parent = ddFrame
+            })
+            optBtn.MouseButton1Click:Connect(function()
+                ddBtn.Text = opt
+                ddFrame.Visible = false
+                callback(opt)
             end)
-            table.insert(options, Opt)
         end
+
+        ddBtn.MouseButton1Click:Connect(function()
+            ddFrame.Visible = not ddFrame.Visible
+        end)
     end
 
-    return Elements
+    tabs[name] = tab
+    return tab
 end
 
--- UI Toggle hotkey / button
-local ToggleKey = Enum.KeyCode.RightShift
-local buttonToggle = Instance.new("TextButton", ScreenGui)
-buttonToggle.Size = UDim2.new(0, 60, 0, 25)
-buttonToggle.Position = UDim2.new(0, 10, 0, 10)
-buttonToggle.Text = "UI"
-buttonToggle.BackgroundColor3 = Color3.fromRGB(40,40,40)
-buttonToggle.TextColor3 = Color3.new(1,1,1)
-
-buttonToggle.MouseButton1Click:Connect(function()
-    Main.Visible = not Main.Visible
-end)
-
-UserInputService.InputBegan:Connect(function(input)
-    if input.KeyCode == ToggleKey then
-        Main.Visible = not Main.Visible
-    end
-end)
-
-return Tabs
+return ModernUI
 
 end
 
-return setmetatable({}, ModernUI)
+return ModernUI
