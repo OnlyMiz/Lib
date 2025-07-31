@@ -1,132 +1,213 @@
-	-- Simple UI Library
+-- RiceModeUILib.lua
 
-local PlayerGui = game.Players.LocalPlayer:WaitForChild("PlayerGui")
-local library = {}
+local RiceModeUILib = {}
 
---- Create a new UI library instance
-function library.new(name)
-	local screenGui = Instance.new("ScreenGui")
-	screenGui.Name = name or "UI Library"
-	screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-	screenGui.ResetOnSpawn = false
-	screenGui.Parent = PlayerGui
+function RiceModeUILib:Create(name)
+    local gui = {}
 
-	local self = {
-		gui = screenGui,
-		tabs = {},
-		activeTab = nil
-	}
+    -- UI Gốc
+    local ScreenGui = Instance.new("ScreenGui")
+    ScreenGui.Name = name or "RiceModeUI"
+    ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    ScreenGui.ResetOnSpawn = false
+    ScreenGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
 
-	function self:createFrame(properties)
-		local frame = Instance.new("Frame")
-		for prop, value in pairs(properties) do
-			frame[prop] = value
-		end
-		frame.Parent = self.gui
-		return frame
-	end
+    local Booting = Instance.new("Frame")
+    Booting.Name = "Booting"
+    Booting.Size = UDim2.new(0, 412, 0, 251)
+    Booting.Position = UDim2.new(0.324, 0, 0.244, 0)
+    Booting.BackgroundColor3 = Color3.fromRGB(143, 143, 143)
+    Booting.BackgroundTransparency = 0.5
+    Booting.BorderSizePixel = 0
+    Booting.Parent = ScreenGui
+    
+    local uiCorner = Instance.new("UICorner", Booting)
+    uiCorner.CornerRadius = UDim.new(0, 10)
 
-	function self:createTab(tabName)
-		if self.tabs[tabName] then
-			warn("Tab '" .. tabName .. "' already exists.")
-			return
-		end
+    local Title = Instance.new("TextLabel")
+    Title.Name = "Name"
+    Title.Text = name or "RiceModeUI"
+    Title.Size = UDim2.new(0, 203, 0, 23)
+    Title.Position = UDim2.new(0.034, 0, 0.048, 0)
+    Title.Font = Enum.Font.Unknown
+    Title.TextSize = 20
+    Title.TextColor3 = Color3.fromRGB(0, 0, 0)
+    Title.BackgroundTransparency = 0.5
+    Title.BackgroundColor3 = Color3.fromRGB(143, 143, 143)
+    Title.BorderSizePixel = 0
+    Title.Parent = Booting
+    Instance.new("UICorner", Title).CornerRadius = UDim.new(0, 10)
 
-		local tabFrame = Instance.new("Frame")
-		tabFrame.Name = tabName
-		tabFrame.Size = UDim2.new(0.2, 0, 1, 0)
-		tabFrame.Parent = self.gui
+    local Window = Instance.new("Frame")
+    Window.Name = "Window"
+    Window.Size = UDim2.new(0, 385, 0, 197)
+    Window.Position = UDim2.new(0.034, 0, 0.163, 0)
+    Window.BackgroundColor3 = Color3.fromRGB(143, 143, 143)
+    Window.BackgroundTransparency = 0.5
+    Window.BorderSizePixel = 0
+    Window.Parent = Booting
+    Instance.new("UICorner", Window)
 
-		local contentFrame = Instance.new("ScrollingFrame")
-		contentFrame.Name = "Content"
-		contentFrame.Size = UDim2.new(0.8, 0, 1, 0)
-		contentFrame.Position = UDim2.new(0.2, 0, 0, 0)
-		contentFrame.Parent = self.gui
-		contentFrame.Visible = false
+    local TabFrame = Instance.new("ScrollingFrame")
+    TabFrame.Name = "TabFrame"
+    TabFrame.Size = UDim2.new(0, 112, 0, 197)
+    TabFrame.BackgroundTransparency = 0.5
+    TabFrame.BackgroundColor3 = Color3.fromRGB(143, 143, 143)
+    TabFrame.BorderSizePixel = 0
+    TabFrame.Parent = Window
+    TabFrame.ScrollBarThickness = 6
+    Instance.new("UICorner", TabFrame)
 
-		self.tabs[tabName] = {
-			tabButton = tabFrame,
-			content = contentFrame,
-			elements = {}
-		}
+    local Destroy = Instance.new("TextButton")
+    Destroy.Text = "X"
+    Destroy.Size = UDim2.new(0, 37, 0, 23)
+    Destroy.Position = UDim2.new(0.879, 0, 0.048, 0)
+    Destroy.BackgroundColor3 = Color3.fromRGB(143, 143, 143)
+    Destroy.BackgroundTransparency = 0.5
+    Destroy.TextColor3 = Color3.fromRGB(255, 0, 4)
+    Destroy.Font = Enum.Font.Unknown
+    Destroy.TextSize = 20
+    Destroy.Parent = Booting
+    Instance.new("UICorner", Destroy)
 
-		if not self.activeTab then
-			self.activeTab = tabName
-			contentFrame.Visible = true
-		end
+    Destroy.MouseButton1Click:Connect(function()
+        ScreenGui:Destroy()
+    end)
 
-		return self.tabs[tabName]
-	end
+    -- Dragging Booting
+    local dragging, dragInput, dragStart, startPos
+    local UserInputService = game:GetService("UserInputService")
 
-	function self:selectTab(tabName)
-		if not self.tabs[tabName] then
-			warn("Tab '" .. tabName .. "' does not exist.")
-			return
-		end
-		
-		-- Hide all other tabs
-		for _, tabData in pairs(self.tabs) do
-			tabData.content.Visible = false
-		end
+    Booting.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = true
+            dragStart = input.Position
+            startPos = Booting.Position
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then dragging = false end
+            end)
+        end
+    end)
 
-		-- Show the selected tab
-		self.tabs[tabName].content.Visible = true
-		self.activeTab = tabName
-	end
+    UserInputService.InputChanged:Connect(function(input)
+        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+            local delta = input.Position - dragStart
+            Booting.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X,
+                                         startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        end
+    end)
 
-	function self:addToggle(tabName, properties, callback)
-		local tab = self.tabs[tabName]
-		if not tab then
-			warn("Tab '" .. tabName .. "' not found.")
-			return
-		end
+    local contentTabs = {} -- chứa tất cả các tab
 
-		local toggleButton = Instance.new("TextButton")
-		for prop, value in pairs(properties) do
-			toggleButton[prop] = value
-		end
-		toggleButton.Parent = tab.content
+    function gui:AddTab(tabName)
+        local tabButton = Instance.new("TextButton")
+        tabButton.Text = tabName
+        tabButton.Size = UDim2.new(0, 101, 0, 32)
+        tabButton.BackgroundColor3 = Color3.fromRGB(102, 102, 102)
+        tabButton.BackgroundTransparency = 0.5
+        tabButton.TextColor3 = Color3.fromRGB(0, 0, 0)
+        tabButton.Font = Enum.Font.Unknown
+        tabButton.TextSize = 15
+        tabButton.Parent = TabFrame
+        Instance.new("UICorner", tabButton)
 
-		local state = false
-		toggleButton.MouseButton1Click:Connect(function()
-			state = not state
-			if callback then
-				callback(state)
-			end
-			-- Update UI based on state
-			toggleButton.BackgroundColor3 = state and Color3.fromRGB(81, 255, 0) or Color3.fromRGB(255, 0, 0)
-		end)
+        local contentFrame = Instance.new("ScrollingFrame")
+        contentFrame.Name = tabName .. "_Content"
+        contentFrame.Size = UDim2.new(0, 273, 0, 197)
+        contentFrame.Position = UDim2.new(0.291, 0, 0, 0)
+        contentFrame.BackgroundTransparency = 0.5
+        contentFrame.BackgroundColor3 = Color3.fromRGB(143, 143, 143)
+        contentFrame.BorderSizePixel = 0
+        contentFrame.Visible = (#contentTabs == 0)
+        contentFrame.ScrollBarThickness = 6
+        contentFrame.Parent = Window
+        Instance.new("UICorner", contentFrame)
 
-		return toggleButton
-	end
+        local y = 0
+        local function addItem(item)
+            item.Position = UDim2.new(0, 5, 0, y)
+            y = y + item.Size.Y.Offset + 5
+            item.Parent = contentFrame
+        end
 
-	function self:addTextBox(tabName, properties, callback)
-		local tab = self.tabs[tabName]
-		if not tab then
-			warn("Tab '" .. tabName .. "' not found.")
-			return
-		end
+        tabButton.MouseButton1Click:Connect(function()
+            for _, t in pairs(contentTabs) do
+                t.Content.Visible = false
+            end
+            contentFrame.Visible = true
+        end)
 
-		local textBox = Instance.new("TextBox")
-		for prop, value in pairs(properties) do
-			textBox[prop] = value
-		end
-		textBox.Parent = tab.content
+        local tabObj = {}
 
-		textBox.FocusLost:Connect(function(enterPressed)
-			if enterPressed and callback then
-				callback(textBox.Text)
-			end
-		end)
+        function tabObj:AddButton(text, callback)
+            local btn = Instance.new("TextButton")
+            btn.Text = text
+            btn.Size = UDim2.new(0, 260, 0, 42)
+            btn.BackgroundColor3 = Color3.fromRGB(102, 102, 102)
+            btn.BackgroundTransparency = 0.5
+            btn.TextColor3 = Color3.fromRGB(0, 0, 0)
+            btn.Font = Enum.Font.Unknown
+            btn.TextSize = 15
+            Instance.new("UICorner", btn)
+            btn.MouseButton1Click:Connect(function()
+                if callback then callback() end
+            end)
+            addItem(btn)
+        end
 
-		return textBox
-	end
+        function tabObj:AddToggle(text, callback)
+            local toggle = Instance.new("TextButton")
+            toggle.Text = text
+            toggle.Size = UDim2.new(0, 260, 0, 42)
+            toggle.BackgroundColor3 = Color3.fromRGB(102, 102, 102)
+            toggle.BackgroundTransparency = 0.5
+            toggle.TextColor3 = Color3.fromRGB(0, 0, 0)
+            toggle.Font = Enum.Font.Unknown
+            toggle.TextSize = 15
+            Instance.new("UICorner", toggle)
 
-	function self:destroy()
-		self.gui:Destroy()
-	end
+            local state = false
+            local indicator = Instance.new("TextLabel")
+            indicator.Size = UDim2.new(0, 31, 0, 29)
+            indicator.Position = UDim2.new(0.838, 0, 0.143, 0)
+            indicator.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+            indicator.BackgroundTransparency = 0.5
+            indicator.BorderSizePixel = 0
+            indicator.Text = ""
+            indicator.Parent = toggle
+            Instance.new("UICorner", indicator)
 
-	return self
+            toggle.MouseButton1Click:Connect(function()
+                state = not state
+                indicator.BackgroundColor3 = state and Color3.fromRGB(81, 255, 0) or Color3.fromRGB(255, 0, 0)
+                if callback then callback(state) end
+            end)
+
+            addItem(toggle)
+        end
+
+        function tabObj:AddInput(placeholder, callback)
+            local input = Instance.new("TextBox")
+            input.PlaceholderText = placeholder or ""
+            input.Size = UDim2.new(0, 260, 0, 42)
+            input.BackgroundColor3 = Color3.fromRGB(102, 102, 102)
+            input.BackgroundTransparency = 0.5
+            input.TextColor3 = Color3.fromRGB(0, 0, 0)
+            input.Font = Enum.Font.Unknown
+            input.TextSize = 15
+            Instance.new("UICorner", input)
+            input.FocusLost:Connect(function()
+                if callback then callback(input.Text) end
+            end)
+            addItem(input)
+        end
+
+        tabObj.Content = contentFrame
+        table.insert(contentTabs, tabObj)
+        return tabObj
+    end
+
+    return gui
 end
 
-return library
+return RiceModeUILib
